@@ -1,12 +1,11 @@
 FROM python:3.9-slim
 
-WORKDIR /code/scanner_service
+WORKDIR /code
 
-COPY ./requirements.txt /code/scanner_service/requirements.txt
-RUN pip install --no-cache-dir --upgrade -r /code/scanner_service/requirements.txt
+COPY ./requirements.txt requirements.txt
+RUN pip install --no-cache-dir --upgrade -r requirements.txt
 
-COPY ./app /code/scanner_service/app
-COPY ./config.json /code/scanner_service/config.json
-
+COPY ./app ./app
+COPY ./config.json ./config.json
 
 CMD ["python", "app/main.py"]

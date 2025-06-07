@@ -19,25 +19,25 @@ services:
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
 
-  api-gateway:
+  api_gateway:
     build: ./api_gateway
     ports:
       - "8000:8000"
     volumes:
-      - ./api_gateway:/code/api_gateway
+      - ./api_gateway:/code
     depends_on:
       - kafka
 
-  scanner-service:
+  scanner_service:
     build: ./scanner_service
     volumes:
-      - ./scanner_service:/code/scanner_service
+      - ./scanner_service:/code
     depends_on:
       - kafka
 
-  result-handler:
+  result_handler:
     build: ./result_handler
     volumes:
-      - ./result_handler:/code/result_handler
+      - ./result_handler:/code
     depends_on:
       - kafka
