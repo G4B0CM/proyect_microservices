@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Scanner de Dominios</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            max-width: 600px;
+            margin: auto;
+            padding: 2em;
+        }
+
+        input {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 1em;
+        }
+
+        button {
+            padding: 10px 15px;
+        }
+
+        #status {
+            margin-top: 1em;
+            padding: 1em;
+            background-color: #eee;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Enviar Dominio a Escanear</h1>
+    <form id="scan-form">
+        <input type="text" id="domain" name="domain" placeholder="ejemplo.com" required>
+        <button type="submit">Escanear</button>
+    </form>
+    <div id="status"></div>
+
+    <script>
+        document.getElementById('scan-form').addEventListener('submit', async function (event) {
+            event.preventDefault();
+            const domain = document.getElementById('domain').value;
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = 'Enviando petición...';
+
+            try {
+                const response = await fetch('http://localhost:8000/scan', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ domain: domain }),
+                });
+
+                const result = await response.json();
+
+                if (response.status === 202) {
+                    statusDiv.textContent = `Petición aceptada. El dominio '${domain}' está siendo procesado. Revisa la consola de Docker para ver el resultado.`;
+                } else {
+                    statusDiv.textContent = 'Error: ' + (result.detail || 'Ocurrió un problema.');
+                }
+            } catch (error) {
+                statusDiv.textContent = 'Error de conexión con la API.';
+            }
+        });
+    </script>
+</body>
+
+</html>

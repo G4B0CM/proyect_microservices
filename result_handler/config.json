@@ -1,0 +1,8 @@
+{
+    "service_name": "Result Handler",
+    "kafka": {
+        "bootstrap_servers": "kafka:9092",
+        "result_topic": "domain_scan_results",
+        "consumer_group_id": "result_handler_group"
+    }
+}

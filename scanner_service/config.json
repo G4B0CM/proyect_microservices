@@ -1,0 +1,9 @@
+{
+    "service_name": "Scanner Service",
+    "kafka": {
+        "bootstrap_servers": "kafka:9092",
+        "request_topic": "domain_scan_requests",
+        "result_topic": "domain_scan_results",
+        "consumer_group_id": "scanner_group"
+    }
+}
