@@ -52,7 +52,7 @@ class ScannerService(BaseMicroservice):
         except Exception as e:
             results["dns"]["error"] = str(e)
 
-        try:
+        try:  
             w = whois.whois(domain)
             results["whois"] = {k: str(v) for k, v in w.items()}
         except Exception as e:
