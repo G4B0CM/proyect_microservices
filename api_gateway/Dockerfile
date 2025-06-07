@@ -2,10 +2,12 @@ FROM python:3.9-slim
 
 WORKDIR /code
 
-COPY ./requirements.txt requirements.txt
-RUN pip install --no-cache-dir --upgrade -r requirements.txt
+ENV PYTHONPATH "${PYTHONPATH}:/code"
 
-COPY ./app ./app
-COPY ./config.json ./config.json
+COPY ./requirements.txt /code/requirements.txt
+RUN pip install --no-cache-dir --upgrade -r /code/requirements.txt
 
-CMD ["python", "app/main.py"]
+COPY ./app /code/app
+COPY ./config.json /code/config.json
+
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

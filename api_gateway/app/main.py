@@ -1,55 +1,57 @@
 # app/main.py
 import json
 import logging
+import time # <-- Añadir import
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from kafka import KafkaProducer
-from .base_service import BaseMicroservice
+from kafka.errors import NoBrokersAvailable # <-- Añadir import
+from app.base_service import BaseMicroservice
 
 logging.basicConfig(level=logging.INFO)
 
 class ScanRequest(BaseModel):
     domain: str
 
+app = FastAPI()
+
 class ApiGatewayService(BaseMicroservice):
-    def __init__(self, config_path: str, app: FastAPI):
+    def __init__(self, config_path: str):
         super().__init__(config_path)
-        self.app = app
         self.producer = self._setup_kafka_producer()
         self._register_routes()
 
     def _setup_kafka_producer(self):
-        try:
-            producer = KafkaProducer(
-                bootstrap_servers=self.kafka_config["bootstrap_servers"],
-                value_serializer=lambda v: json.dumps(v).encode('utf-8')
-            )
-            logging.info("Kafka Producer for API Gateway connected successfully.")
-            return producer
-        except Exception as e:
-            logging.error(f"Failed to connect Kafka Producer: {e}")
-            return None
+        retries = 5
+        delay = 3
+        for i in range(retries):
+            try:
+                producer = KafkaProducer(
+                    bootstrap_servers=self.kafka_config["bootstrap_servers"],
+                    value_serializer=lambda v: json.dumps(v).encode('utf-8')
+                )
+                logging.info("Kafka Producer for API Gateway connected successfully.")
+                return producer
+            except NoBrokersAvailable:
+                logging.warning(f"Kafka not available, retrying in {delay}s... ({i+1}/{retries})")
+                time.sleep(delay)
+        
+        logging.error("Could not connect to Kafka after several retries. Exiting.")
+        return None
 
     def _register_routes(self):
-        @self.app.post("/scan", status_code=202)
+        @app.post("/scan", status_code=202)
         async def request_scan(request: ScanRequest):
             if not self.producer:
-                raise HTTPException(status_code=500, detail="Kafka is not available")
+                raise HTTPException(status_code=503, detail="Service Unavailable: Kafka is not connected")
             
             logging.info(f"Received scan request for domain: {request.domain}")
-            
             message = {"domain": request.domain}
             self.producer.send(self.kafka_config["request_topic"], value=message)
             self.producer.flush()
-            
             return {"message": "Scan request accepted and is being processed."}
 
     def run(self):
-        import uvicorn
-        uvicorn.run(self.app, host="0.0.0.0", port=8000)
+        pass
 
-app = FastAPI()
-service = ApiGatewayService(config_path="../config.json", app=app)
-
-if __name__ == "__main__":
-    service.run()
+service = ApiGatewayService(config_path="config.json")
