@@ -1,7 +1,0 @@
-{
-    "service_name": "API Gateway",
-    "kafka": {
-        "bootstrap_servers": "kafka:9092",
-        "request_topic": "domain_scan_requests"
-    }
-}
