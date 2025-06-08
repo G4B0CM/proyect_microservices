@@ -26,6 +26,16 @@
             margin-top: 1em;
             padding: 1em;
             background-color: #eee;
+            border-radius: 5px;
+        }
+
+        #result {
+            margin-top: 1em;
+            padding: 1em;
+            background-color: #f0f0f0;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
         }
     </style>
 </head>
@@ -34,35 +44,76 @@
     <h1>Enviar Dominio a Escanear</h1>
     <form id="scan-form">
         <input type="text" id="domain" name="domain" placeholder="ejemplo.com" required>
-        <button type="submit">Escanear</button>
+        <button type="submit" id="submit-button">Escanear</button>
     </form>
     <div id="status"></div>
+    <div id="result" style="display:none;"></div>
 
     <script>
-        document.getElementById('scan-form').addEventListener('submit', async function (event) {
+        const scanForm = document.getElementById('scan-form');
+        const submitButton = document.getElementById('submit-button');
+        const domainInput = document.getElementById('domain');
+        const statusDiv = document.getElementById('status');
+        const resultDiv = document.getElementById('result');
+        let pollingInterval;
+
+        // Función para sondear los resultados
+        async function pollForResult(domain) {
+            try {
+                const response = await fetch(`http://localhost:8001/results/${domain}`);
+                if (response.status === 200) {
+                    // ¡Resultado encontrado!
+                    clearInterval(pollingInterval); // Detener el sondeo
+                    const resultData = await response.json();
+                    statusDiv.textContent = '¡Escaneo completado!';
+                    resultDiv.textContent = JSON.stringify(resultData, null, 2);
+                    resultDiv.style.display = 'block';
+                    submitButton.disabled = false;
+                } else if (response.status === 404) {
+                    // Aún no está listo, seguir intentando
+                    statusDiv.textContent = 'Escaneo en progreso... esperando resultados.';
+                } else {
+                    // Ocurrió un error inesperado
+                    clearInterval(pollingInterval);
+                    statusDiv.textContent = `Error al obtener el resultado: ${response.statusText}`;
+                    submitButton.disabled = false;
+                }
+            } catch (error) {
+                clearInterval(pollingInterval);
+                statusDiv.textContent = 'Error de conexión con la API de resultados.';
+                submitButton.disabled = false;
+            }
+        }
+
+        scanForm.addEventListener('submit', async function (event) {
             event.preventDefault();
-            const domain = document.getElementById('domain').value;
-            const statusDiv = document.getElementById('status');
+            const domain = domainInput.value;
+
+            // Limpiar estado anterior
+            if (pollingInterval) clearInterval(pollingInterval);
             statusDiv.textContent = 'Enviando petición...';
+            resultDiv.style.display = 'none';
+            submitButton.disabled = true;
 
             try {
                 const response = await fetch('http://localhost:8000/scan', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ domain: domain }),
                 });
 
-                const result = await response.json();
-
                 if (response.status === 202) {
-                    statusDiv.textContent = `Petición aceptada. El dominio '${domain}' está siendo procesado. Revisa la consola de Docker para ver el resultado.`;
+                    statusDiv.textContent = 'Petición aceptada. Iniciando sondeo de resultados...';
+                    // Iniciar el sondeo cada 3 segundos
+                    pollingInterval = setInterval(() => pollForResult(domain), 3000);
                 } else {
-                    statusDiv.textContent = 'Error: ' + (result.detail || 'Ocurrió un problema.');
+                    const result = await response.json();
+                    statusDiv.textContent = 'Error en la API Gateway: ' + (result.detail || 'Ocurrió un problema.');
+                    submitButton.disabled = false;
                 }
             } catch (error) {
-                statusDiv.textContent = 'Error de conexión con la API.';
+                statusDiv.textContent = 'Error de conexión con la API Gateway.';
+                submitButton.disabled = false;
             }
         });
     </script>

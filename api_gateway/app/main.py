@@ -1,11 +1,13 @@
 # app/main.py
 import json
 import logging
-import time # <-- Añadir import
+import time
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from kafka import KafkaProducer
-from kafka.errors import NoBrokersAvailable # <-- Añadir import
+from kafka.errors import NoBrokersAvailable
+# ¡Importación nueva!
+from fastapi.middleware.cors import CORSMiddleware
 from app.base_service import BaseMicroservice
 
 logging.basicConfig(level=logging.INFO)
@@ -14,6 +16,27 @@ class ScanRequest(BaseModel):
     domain: str
 
 app = FastAPI()
+
+# ---- INICIO DE LA CONFIGURACIÓN DE CORS ----
+
+# Lista de orígenes que tienen permiso para hacer solicitudes.
+# Para desarrollo, puedes usar un comodín '*' para permitir todos,
+# pero es más seguro ser explícito.
+origins = [
+    "http://localhost",
+    "http://localhost:8080", # El origen de tu frontend
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins, # Permite los orígenes en la lista
+    allow_credentials=True, # Permite cookies (no aplica aquí, pero es buena práctica)
+    allow_methods=["*"],    # Permite todos los métodos (GET, POST, OPTIONS, etc.)
+    allow_headers=["*"],    # Permite todas las cabeceras
+)
+
+# ---- FIN DE LA CONFIGURACIÓN DE CORS ----
+
 
 class ApiGatewayService(BaseMicroservice):
     def __init__(self, config_path: str):

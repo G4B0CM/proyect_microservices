@@ -40,9 +40,9 @@ class ResultHandlerService(BaseMicroservice):
         for message in self.consumer:
             result = message.value
             logging.info("--- SCAN RESULT RECEIVED ---")
-            print(json.dumps(result, indent=2))
+            logging.info(json.dumps(result, indent=2))
             logging.info("--------------------------")
 
 if __name__ == "__main__":
-    service = ResultHandlerService(config_path="config.json") # <-- Ruta corregida
+    service = ResultHandlerService(config_path="config.json") 
     service.run()

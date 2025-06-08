@@ -41,3 +41,21 @@ services:
       - ./result_handler:/code
     depends_on:
       - kafka
+  
+  result_api:
+    build: ./result_api
+    ports:
+      - "8001:8001" 
+    volumes:
+      - ./result_api/app:/code/app
+      - ./result_api/config.json:/code/config.json
+    depends_on:
+      - kafka
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - api_gateway
+      - result_api

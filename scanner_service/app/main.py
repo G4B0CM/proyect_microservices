@@ -83,5 +83,5 @@ class ScannerService(BaseMicroservice):
             self.producer.flush()
 
 if __name__ == "__main__":
-    service = ScannerService(config_path="config.json") # <-- Ruta corregida
+    service = ScannerService(config_path="config.json")
     service.run()
